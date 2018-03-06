@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Bid-Tac-Toe</title>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.2/socket.io.js"></script>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<style>
+			html, body {
+				margin: 0px;
+				padding: 0px;
+				font-family: Arial;
+				background-color: #555;
+			}
+
+			.main {
+				padding: 0px;
+				height: 100%;
+				min-width: 700px;
+			}
+
+			#header {
+				height: 150px;
+				background-color: white;
+			}
+
+			h1 {
+				position: relative;
+				top: 20px;
+				margin: 0px;
+				text-align: center;
+			}
+
+			#game {
+				padding: 0px;
+				height: 100%;
+				min-height: 500px;
+			}
+
+			#centerWrap {
+				width: 700px;
+				height: 100%;
+				margin: auto;
+			}
+
+			#topBar {
+				padding-top: 20px;
+				width: 100%;
+				height: 160px;
+			}
+
+			#notifBar {
+				height: 20%;
+				text-align: center;
+				color: white;
+				font-size: 20px;
+			}
+
+			#pointBar {
+				color: white;
+				font-size: 25px;
+				text-align: center;
+				height: 80%
+			}
+
+			#oldpointBar {
+				top: 40px;
+				position: relative;
+				width: 500px;
+				height: 50px;
+				margin: auto;
+				margin-bottom: 50px;
+				color: white;
+				font-size: 25px;
+				text-align: center;
+			}
+
+			.scoreHolder {
+				width: 50px;
+			}
+
+			.lt {
+				float: left;
+			}
+
+			.rt {
+				float: right;
+			}
+
+			.tallyFive {
+				text-decoration: line-through;
+			}
+
+			#board {
+				width: 100%;
+			}
+
+			.bid {
+				display: inline-block;
+				width: 100px;
+				text-align: center;
+				line-height: 400px;
+				font-family: Arial;
+				font-size: 40px;
+				color: white;
+			}
+
+			.bid input {
+				width: 90px;
+				height: 70px;
+				color: #333;
+				text-align: center;
+			}
+
+			#grid {
+				width: 500px;
+				display: inline-block;
+			}
+
+			#gameTable {
+				margin: auto;
+			}
+
+			table {
+				border-collapse: collapse;
+			}
+
+			td {
+				width: 100px;
+				height: 100px;
+				margin: 0px;
+				padding: 10px;
+			}
+
+			.cell {
+				cursor: pointer;
+			}
+
+			.row0 td, .row1 td {
+				border-bottom: 10px solid #333;
+			}
+
+			.col0, .col1 {
+				border-right: 10px solid #333;
+			}
+
+			.gamepiece, .hoverpiece {
+				margin: 0px;
+				display: none;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="main">
+			<div id="header">
+				<h1>Bid-Tac-Toe</h1>
+			</div>
+			<div id="game">
+				<div id="centerWrap">
+					<div id="topBar">
+						<div id="notifBar" class="innerBar">
+
+						</div>
+						<div id="pointBar" class="innerBar">
+							<span id="score-x" class="scoreHolder lt">
+								X
+								<hr>
+								<div class="points">
+									10
+								</div>
+							</span>
+							<span id="score-o" class="scoreHolder rt">
+								O
+								<hr>
+								<div class="points">
+									10
+								</div>
+							</span>
+						</div>
+					</div>
+					<div id="board">
+						<div class="bid lt">
+							<input type="text" value="0" />
+						</div>
+						<div id="grid">
+							<table id="gameTable">
+								<tr class="row row0">
+									<td class="cell col0">
+										<svg class="filler" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<rect fill="none" fill="#ffffff" height="100" width="100" y="0" x="0"/>
+										</svg>
+										<svg class="gamepiece x" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<line x1="5" y1="5" x2="95" y2="95" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+											<line x1="5" y1="95" x2="95" y2="5" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+										</svg>
+										<svg class="gamepiece o" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<ellipse fill-opacity="0" stroke="#ff9f8c" ry="42" rx="42" cx="50" cy="50" stroke-width="15"/>
+										</svg>
+										<svg class="hoverpiece x" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<line x1="5" y1="5" x2="95" y2="95" stroke-opacity="0.1" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+											<line x1="5" y1="95" x2="95" y2="5" stroke-opacity="0.1" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+										</svg>
+										<svg class="hoverpiece o" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<ellipse stroke-opacity="0.1" fill-opacity="0" stroke="#ff9f8c" ry="42" rx="42" cx="50" cy="50" stroke-width="15"/>
+										</svg>
+									</td>
+									<td class="cell col1">
+										<svg class="filler" width="100" height="100" xmlns="http://www.w3.org/2000/svg" style="display: none">
+											<rect fill="none" fill="#ffffff" height="100" width="100" y="0" x="0"/>
+										</svg>
+										<svg class="gamepiece x" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<line x1="5" y1="5" x2="95" y2="95" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+											<line x1="5" y1="95" x2="95" y2="5" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+										</svg>
+										<svg class="gamepiece o" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<ellipse fill-opacity="0" stroke="#ff9f8c" ry="42" rx="42" cx="50" cy="50" stroke-width="15"/>
+										</svg>
+										<svg class="hoverpiece x" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<line x1="5" y1="5" x2="95" y2="95" stroke-opacity="0.1" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+											<line x1="5" y1="95" x2="95" y2="5" stroke-opacity="0.1" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+										</svg>
+										<svg class="hoverpiece o" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<ellipse stroke-opacity="0.1" fill-opacity="0" stroke="#ff9f8c" ry="42" rx="42" cx="50" cy="50" stroke-width="15"/>
+										</svg>
+									</td>
+									<td class="cell col2">
+										<svg class="filler" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<rect fill="none" fill="#ffffff" height="100" width="100" y="0" x="0"/>
+										</svg>
+										<svg class="gamepiece x" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<line x1="5" y1="5" x2="95" y2="95" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+											<line x1="5" y1="95" x2="95" y2="5" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+										</svg>
+										<svg class="gamepiece o" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<ellipse fill-opacity="0" stroke="#ff9f8c" ry="42" rx="42" cx="50" cy="50" stroke-width="15"/>
+										</svg>
+										<svg class="hoverpiece x" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<line x1="5" y1="5" x2="95" y2="95" stroke-opacity="0.1" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+											<line x1="5" y1="95" x2="95" y2="5" stroke-opacity="0.1" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+										</svg>
+										<svg class="hoverpiece o" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<ellipse stroke-opacity="0.1" fill-opacity="0" stroke="#ff9f8c" ry="42" rx="42" cx="50" cy="50" stroke-width="15"/>
+										</svg>
+									</td>
+								</tr>
+								<tr class="row row1">
+									<td class="cell col0">
+										<svg class="filler" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<rect fill="none" fill="#ffffff" height="100" width="100" y="0" x="0"/>
+										</svg>
+										<svg class="gamepiece x" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<line x1="5" y1="5" x2="95" y2="95" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+											<line x1="5" y1="95" x2="95" y2="5" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+										</svg>
+										<svg class="gamepiece o" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<ellipse fill-opacity="0" stroke="#ff9f8c" ry="42" rx="42" cx="50" cy="50" stroke-width="15"/>
+										</svg>
+										<svg class="hoverpiece x" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<line x1="5" y1="5" x2="95" y2="95" stroke-opacity="0.1" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+											<line x1="5" y1="95" x2="95" y2="5" stroke-opacity="0.1" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+										</svg>
+										<svg class="hoverpiece o" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<ellipse stroke-opacity="0.1" fill-opacity="0" stroke="#ff9f8c" ry="42" rx="42" cx="50" cy="50" stroke-width="15"/>
+										</svg>
+									</td>
+									<td class="cell col1">
+										<svg class="filler" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<rect fill="none" fill="#ffffff" height="100" width="100" y="0" x="0"/>
+										</svg>
+										<svg class="gamepiece x" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<line x1="5" y1="5" x2="95" y2="95" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+											<line x1="5" y1="95" x2="95" y2="5" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+										</svg>
+										<svg class="gamepiece o" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<ellipse fill-opacity="0" stroke="#ff9f8c" ry="42" rx="42" cx="50" cy="50" stroke-width="15"/>
+										</svg>
+										<svg class="hoverpiece x" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<line x1="5" y1="5" x2="95" y2="95" stroke-opacity="0.1" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+											<line x1="5" y1="95" x2="95" y2="5" stroke-opacity="0.1" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+										</svg>
+										<svg class="hoverpiece o" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<ellipse stroke-opacity="0.1" fill-opacity="0" stroke="#ff9f8c" ry="42" rx="42" cx="50" cy="50" stroke-width="15"/>
+										</svg>
+									</td>
+									<td class="cell col2">
+										<svg class="filler" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<rect fill="none" fill="#ffffff" height="100" width="100" y="0" x="0"/>
+										</svg>
+										<svg class="gamepiece x" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<line x1="5" y1="5" x2="95" y2="95" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+											<line x1="5" y1="95" x2="95" y2="5" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+										</svg>
+										<svg class="gamepiece o" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<ellipse fill-opacity="0" stroke="#ff9f8c" ry="42" rx="42" cx="50" cy="50" stroke-width="15"/>
+										</svg>
+										<svg class="hoverpiece x" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<line x1="5" y1="5" x2="95" y2="95" stroke-opacity="0.1" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+											<line x1="5" y1="95" x2="95" y2="5" stroke-opacity="0.1" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+										</svg>
+										<svg class="hoverpiece o" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<ellipse stroke-opacity="0.1" fill-opacity="0" stroke="#ff9f8c" ry="42" rx="42" cx="50" cy="50" stroke-width="15"/>
+										</svg>
+									</td>
+								</tr>
+								<tr class="row row2">
+									<td class="cell col0">
+										<svg class="filler" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<rect fill="none" fill="#ffffff" height="100" width="100" y="0" x="0"/>
+										</svg>
+										<svg class="gamepiece x" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<line x1="5" y1="5" x2="95" y2="95" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+											<line x1="5" y1="95" x2="95" y2="5" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+										</svg>
+										<svg class="gamepiece o" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<ellipse fill-opacity="0" stroke="#ff9f8c" ry="42" rx="42" cx="50" cy="50" stroke-width="15"/>
+										</svg>
+										<svg class="hoverpiece x" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<line x1="5" y1="5" x2="95" y2="95" stroke-opacity="0.1" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+											<line x1="5" y1="95" x2="95" y2="5" stroke-opacity="0.1" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+										</svg>
+										<svg class="hoverpiece o" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<ellipse stroke-opacity="0.1" fill-opacity="0" stroke="#ff9f8c" ry="42" rx="42" cx="50" cy="50" stroke-width="15"/>
+										</svg>
+									</td>
+									<td class="cell col1">
+										<svg class="filler" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<rect fill="none" fill="#ffffff" height="100" width="100" y="0" x="0"/>
+										</svg>
+										<svg class="gamepiece x" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<line x1="5" y1="5" x2="95" y2="95" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+											<line x1="5" y1="95" x2="95" y2="5" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+										</svg>
+										<svg class="gamepiece o" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<ellipse fill-opacity="0" stroke="#ff9f8c" ry="42" rx="42" cx="50" cy="50" stroke-width="15"/>
+										</svg>
+										<svg class="hoverpiece x" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<line x1="5" y1="5" x2="95" y2="95" stroke-opacity="0.1" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+											<line x1="5" y1="95" x2="95" y2="5" stroke-opacity="0.1" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+										</svg>
+										<svg class="hoverpiece o" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<ellipse stroke-opacity="0.1" fill-opacity="0" stroke="#ff9f8c" ry="42" rx="42" cx="50" cy="50" stroke-width="15"/>
+										</svg>
+									</td>
+									<td class="cell col2">
+										<svg class="filler" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<rect fill="none" fill="#ffffff" height="100" width="100" y="0" x="0"/>
+										</svg>
+										<svg class="gamepiece x" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<line x1="5" y1="5" x2="95" y2="95" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+											<line x1="5" y1="95" x2="95" y2="5" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+										</svg>
+										<svg class="gamepiece o" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<ellipse fill-opacity="0" stroke="#ff9f8c" ry="42" rx="42" cx="50" cy="50" stroke-width="15"/>
+										</svg>
+										<svg class="hoverpiece x" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<line x1="5" y1="5" x2="95" y2="95" stroke-opacity="0.1" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+											<line x1="5" y1="95" x2="95" y2="5" stroke-opacity="0.1" fill-opacity="0" stroke-width="15" stroke="#a3dbff" fill="none"/>
+										</svg>
+										<svg class="hoverpiece o" width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+											<ellipse stroke-opacity="0.1" fill-opacity="0" stroke="#ff9f8c" ry="42" rx="42" cx="50" cy="50" stroke-width="15"/>
+										</svg>
+									</td>
+								</tr>
+							</table>
+						</div>
+						<div class="bid rt">
+							0
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			var piece;
+			var socket = io("http://localhost");
+			var board = [0, 0, 0,  0, 0, 0,  0, 0, 0];
+			var placePiece = false;
+			var bidding = true;
+
+			var renderScore = function (count, which) {
+				var fiveCount = Math.floor(count / 5);
+				var five = "<div class='score tallyFive'>||||</div>";
+				var score = $("<div class='score'></div>");
+				var i;
+
+				$("#score-" + which).find(".score").remove();
+
+				for (i = 0; i < fiveCount; i++) {
+					$("#score-" + which).append(five);
+				}
+
+				for (i = 0; i < count % 5; i++) {
+					score[0].textContent += "|";
+				}
+
+				$("#score-" + which).append(score);
+			}
+
+			socket.on("connected", function () {
+				console.log("Connected to socket server!");
+				socket.emit("join_game");
+			});
+
+			socket.on("err", function (err) {
+				console.log("Error: " + err);
+			});
+
+			socket.on("joined", function (chip) {
+				piece = chip;
+				console.log("Your chip is " + chip);
+			});
+
+			socket.on("start", function () {
+				console.log("Starting game!");
+			});
+
+			socket.on("player_left", function () {
+				console.log("Other player left the game!");
+			});
+
+			socket.on("bid_success", function () {
+				//successful bid, can no longer make new bids
+			});
+
+			socket.on("bid_win", function (data) {
+				//info on who won bid, switch to piece placement for winner
+			});
+
+			socket.on("tie_break", function (holder) {
+				//tie break needs to take place
+			});
+
+			socket.on("tie_holder", function (holder) {
+				//new tie break holder
+			});
+
+			$(".cell").mouseenter(function () {
+				if (placePiece && piece && !$(this).find(".gamepiece").is(":visible")) {
+					$(this).find(".hoverpiece." + piece).show();
+					$(this).find(".filler").hide();
+				}
+			});
+
+			$(".cell").mouseleave(function () {
+				if (placePiece && piece && !$(this).find(".gamepiece").is(":visible")) {
+					$(this).find(".hoverpiece." + piece).hide();
+					$(this).find(".filler").show();
+				}
+			});
+
+			$("body").keydown(function (e) {
+				if (e.which > 64 && e.which < 106) {
+					e.preventDefault();
+					if (e.which > 95 && e.which < 106) {
+						var sum = parseInt($(".bid input").val() + e.key);
+						if (sum <= 10) {
+							$(".bid input").val(sum);
+						}
+						else {
+							$(".bid input").val(e.key);
+						}
+					}
+				}
+				else if (e.key == "Enter" && bidding) {
+					socket.emit("bid", parseInt($(".bid input").val()));
+				}
+			});
+		</script>
+	</body>
+</html>
