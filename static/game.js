@@ -120,7 +120,7 @@ class Board {
         let pad = this.pad;
 
         ctx.fillStyle = color;
-        ctx.fillRect(x + pad, y + pad, cellWidth - pad * 2, cellHeight - pad * 2);
+        ctx.fillRect(x + pad - 2, y + pad - 2, cellWidth - pad * 2 + 4, cellHeight - pad * 2 + 4);
 
         ctx.globalAlpha = 1.0;
     }
@@ -133,7 +133,7 @@ class Board {
         let cellHeight = this.height / 3;
         let pad = this.pad;
 
-        ctx.lineWidth = pad;
+        ctx.lineWidth = pad - 2;
         ctx.strokeStyle = color;
         ctx.rect(x + pad / 2, y + pad / 2, cellWidth - pad, cellHeight - pad);
         ctx.stroke();
@@ -244,7 +244,7 @@ class OuterBoard extends Board {
     }
 
     innerWon (cell, piece) {
-        this.cells[cell] = piece;
+        this.placePiece(cell, piece);
         this.setGlow(cell, piece == 1 ? "#a3dbff" : piece == 2 ? "#ff9f8c": "grey", 0.5);
     }
 
@@ -252,7 +252,7 @@ class OuterBoard extends Board {
         this.clearBorders();
         for (let i in this.inners) {
             if (inner == i || (inner == -1 && this.cells[i] == 0)) {
-                this.setBorder(i, game.turn == 1 ? "#a3dbff" : "#ff9f8c", 0.3);
+                this.setBorder(i, game.turn == 1 ? "#a3dbff" : "#ff9f8c", 0.5);
             }
         }
     }
@@ -263,6 +263,7 @@ class InnerBoard extends Board {
 
     constructor (outerBoard, x, y) {
         super(x * (outerBoard.width / 3), y * (outerBoard.height / 3), outerBoard.width / 3, outerBoard.height / 3, "#aaaaaa");
+        this.outer = outerBoard;
     }
 
     render () {
@@ -272,6 +273,16 @@ class InnerBoard extends Board {
     click (x, y, inner) {
         let cell = this.getCell(x, y);
         game.socket.emit("place_piece", inner, cell);
+    }
+
+    placePiece (cell, piece) {
+        super.placePiece(cell, piece);
+
+        for (let inner in this.outer.inners) {
+            this.outer.inners[inner].clearGlow();
+        }
+
+        this.setGlow(cell, "yellow", 0.2);
     }
 }
 
@@ -325,7 +336,8 @@ class Game {
         });
 
         socket.on("over", (winner) => {
-            this.board.clearBorder();
+            this.board.clearBorders();
+            this.render();
 
             if (winner != -1) {
                 if (winner == 1)
