@@ -291,6 +291,7 @@ class Game {
     constructor () {
         this.socket = io("http://localhost");
         this.board = new OuterBoard();
+        this.newGame = true;
 
         this.render();
 
@@ -298,12 +299,14 @@ class Game {
         let socket = this.socket;
 
         socket.on("connected", () => {
-            console.log("Connected to server");
-            socket.emit("join_game");
+            if (this.newGame)
+                socket.emit("join_game");
+            else
+                window.location.reload();
         });
 
         socket.on("joined", (piece) => {
-            console.log("Joined game, player " + piece);
+            this.newGame = false;
             this.piece = piece;
         });
 
@@ -347,6 +350,10 @@ class Game {
             }
             else
                 this.alert("Tie! No one wins")
+        });
+
+        socket.on("disconnect", () => {
+            this.alert("Connection to server lost")
         });
 
     }
