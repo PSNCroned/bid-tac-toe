@@ -292,6 +292,7 @@ class Game {
         this.socket = io("http://localhost");
         this.board = new OuterBoard();
         this.newGame = true;
+        this.over = false;
 
         this.render();
 
@@ -339,6 +340,7 @@ class Game {
         });
 
         socket.on("over", (winner) => {
+            this.over = true;
             this.board.clearBorders();
             this.render();
 
@@ -353,7 +355,8 @@ class Game {
         });
 
         socket.on("disconnect", () => {
-            this.alert("Connection to server lost")
+            if (!this.over)
+                this.alert("Connection to server lost");
         });
 
     }
