@@ -2,6 +2,11 @@ var canvas = document.getElementsByTagName("canvas")[0];
     canvas.width = 600;
     canvas.height = 600;
 var ctx = canvas.getContext("2d");
+var Images = {
+    3: new Image, //bomb
+    4: new Image, //magnet
+    5: new Image  //wildcard
+};
 
 class Board {
 
@@ -56,7 +61,7 @@ class Board {
                     let x = coords.col * (this.width / 3) + this.x;
                     let y = coords.row * (this.height / 3) + this.y;
 
-                    cell == 1 ? this.drawX(x, y) : this.drawO(x, y);
+                    cell == 1 ? this.drawX(x, y) : cell == 2 ? this.drawO(x, y) : this.drawPower(x, y, cell);
                 }
             }
         }
@@ -110,6 +115,19 @@ class Board {
         ctx.arc(x + cellWidth / 2, y + cellHeight / 2, cellWidth / 2 - this.pad, 0, 2 * Math.PI);
 
         ctx.stroke();
+    }
+
+    drawPower (x, y, type) {
+        let cellWidth = this.width / 3;
+        let cellHeight = this.height / 3;
+        let pad = this.pad;
+
+        if (type == 3 || type == 4) //bomb or magnet
+            ctx.drawImage(Images[type], x + pad, y + pad, cellWidth - pad * 2, cellHeight - pad * 2);
+        else { //wildcard
+            this.drawX(x, y);
+            this.drawO(x, y);
+        }
     }
 
     drawGlow (x, y, color, opacity) {
@@ -295,7 +313,6 @@ class Game {
 
         this.render();
 
-
         let socket = this.socket;
 
         socket.on("connected", () => {
@@ -310,8 +327,11 @@ class Game {
             this.piece = piece;
         });
 
-        socket.on("start", () => {
-            console.log("Game starting");
+        socket.on("start", (board) => {
+            for (let inner in board) {
+                this.board.inners[inner].cells = board[inner];
+            }
+            this.render();
         });
 
         socket.on("err", (msg) => {
@@ -372,14 +392,28 @@ class Game {
         $("h1").text(msg);
     }
 
+    static loadImages (cb) {
+        Images[3].src = "/images/bomb.png";
+        Images[3].onload = function () {
+            Images[4].src = "/images/magnet.png";
+        };
+        Images[4].onload = function () {
+            Images[5].src = "/images/wildcard.png";
+        }
+        Images[5].onload = cb;
+    }
+
 }
 
-var game = new Game();
+var game;
+Game.loadImages(function () {
+    game = new Game();
 
-$(canvas).click(function (e) {
-    let rect = canvas.getBoundingClientRect();
-    let x = e.clientX - rect.left;
-    let y = e.clientY - rect.top;
+    $(canvas).click(function (e) {
+        let rect = canvas.getBoundingClientRect();
+        let x = e.clientX - rect.left;
+        let y = e.clientY - rect.top;
 
-    game.click(x, y);
+        game.click(x, y);
+    });
 });

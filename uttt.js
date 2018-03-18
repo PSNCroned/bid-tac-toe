@@ -9,6 +9,12 @@ const ip = require("ip");
 const PORT = 80;
 const games = [];
 
+const powerTemplate = {
+    3: 3, //bomb
+    4: 3, //magnet
+    5: 2  //wildcard
+};
+
 app.use(express.static("static"));
 
 http.listen(PORT, /*ip.address()*/"localhost", function () {
@@ -38,7 +44,7 @@ var matchQ = asy.queue(function (data, cb) {
 			});
 		}
 		else { //if open game not found
-			game = genGame(data.id);
+			game = genGame(data.id, "power");
 			games.push(game);
 			cb(false, {
 				piece: 1,
@@ -55,8 +61,8 @@ var genId = function () {
     return Math.random().toString(36).split("0.")[1];
 };
 
-var genGame = function (pid) {
-	return {
+var genGame = function (pid, type) {
+	let obj = {
 		id: genId(),
 		players: {
 			1: pid,
@@ -75,6 +81,16 @@ var genGame = function (pid) {
         },
         inner: -1
 	};
+
+    if (type == "power") {
+        for (let power in powerTemplate) {
+            for (let i = 0; i < powerTemplate[power]; i++) {
+                obj.board.inners[random(0, 8)][random(0, 8)] = power;
+            }
+        }
+    }
+
+    return obj;
 };
 
 var inGame = function (id) {
@@ -111,8 +127,20 @@ var checkWin = function (board) {
 	for (let c in winCombos) {
 		let piece = board[winCombos[c][0]];
 
+        if (piece == 5) {
+            piece = board[winCombos[c][1]];
+
+            if (piece == 5) {
+                piece = board[winCombos[c][2]];
+                return piece;
+            }
+        }
+
         if (piece != 0) {
-    		if (board[winCombos[c][1]] == piece && board[winCombos[c][2]] == piece)
+    		if (
+                (board[winCombos[c][1]] == piece || board[winCombos[c][1]] == 5) &&
+                (board[winCombos[c][2]] == piece || board[winCombos[c][2]] == 5)
+            )
     			return piece;
         }
 	}
@@ -131,6 +159,10 @@ var boardFilled = function (board) {
         return true;
     return false;
 };
+
+var random = function (min, max) {
+	return Math.floor(Math.random() * (max - min + 1) + min);
+}
 
 io.on("connection", (socket) => {
 	var sid = socket.id;
@@ -157,7 +189,7 @@ io.on("connection", (socket) => {
                 socket.join(data.game.id);
 				socket.emit("joined", data.piece);
 				if (data.game.state == "playing") {
-					io.to(data.game.id).emit("start");
+					io.to(data.game.id).emit("start", data.game.board.inners);
                     io.to(data.game.id).emit("turn", 1, -1);
                 }
 			}
@@ -169,12 +201,16 @@ io.on("connection", (socket) => {
         var piece = getPiece(game, sid);
 
 		if (game.turn == piece) { //alowed to place piece
-			if (game.board.inners[inner][cell] == 0 && (inner == game.inner || game.inner == -1)) { //can place piece in that spot
+			if (
+                (game.board.inners[inner][cell] == 0 || game.board.inners[inner][cell] > 2) &&
+                (inner == game.inner || game.inner == -1)
+            ) { //can place piece in that spot
+                let power = game.board.inners[inner][cell];
                 game.board.inners[inner][cell] = piece;
                 io.to(game.id).emit("place", inner, cell, piece);
 
-				var innerWon = checkWin(game.board.inners[inner]);
-                var innerFilled = boardFilled(game.board.inners[inner]);
+				let innerWon = checkWin(game.board.inners[inner]);
+                let innerFilled = boardFilled(game.board.inners[inner]);
 
                 if (innerWon || innerFilled) {
                     let state = innerWon > 0 ? innerWon : -1; //set to winner or -1 for tie
@@ -193,9 +229,19 @@ io.on("connection", (socket) => {
                         io.sockets.connected[game.players[2]].disconnect();
                     }
                 }
-                
+
                 game.turn = game.turn == 1 ? 2 : 1;
-                game.inner = game.board.outer[cell] == 0 ? cell : -1;
+
+                if (power == 3) {
+                    game.inner = -1;
+                }
+                else if (power == 4) {
+                    game.inner = game.board.outer[inner] == 0 ? inner : -1;
+                }
+                else {
+                    game.inner = game.board.outer[cell] == 0 ? cell : -1;
+                }
+
                 io.to(game.id).emit("turn", game.turn, game.inner);
 			}
 		}
@@ -205,3 +251,10 @@ io.on("connection", (socket) => {
 process.on('uncaughtException', function (err) {
 	console.log(err);
 });
+
+/*
+    Power spaces:
+        3: bomb
+        4: glue
+        5: wildcard
+*/
