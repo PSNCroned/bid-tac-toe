@@ -17,13 +17,15 @@ const powerTemplate = {
 };
 
 app.use(express.static("static"));
+app.set("view engine", "ejs");
 
 http.listen(PORT, IP, function () {
     console.log("Listening at " + IP + " on port " + PORT);
 });
 
 app.get("/", function (req, res) {
-    res.sendFile(__dirname + "/uttt.html");
+    //res.sendFile(__dirname + "/uttt.html");
+    res.render("index", {ip: IP, port: PORT});
 });
 
 var matchQ = asy.queue(function (data, cb) {
@@ -193,7 +195,7 @@ io.on("connection", (socket) => {
 				io.to(game.id).emit("player_left");
 			}
 
-            console.log("Games: " + games.length);
+            //console.log("Games: " + games.length);
 		}
 	});
 
@@ -230,7 +232,7 @@ io.on("connection", (socket) => {
                 else if (game.players[1].ip == ip || game.players[2].ip == ip) {
                     let pNum;
 
-                    if (game.players[1].ip == ip)
+                    if (game.players[1].ip == ip && !game.players[1].sid)
                         pNum = 1;
                     else
                         pNum = 2;

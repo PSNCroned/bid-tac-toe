@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Bid-Tac-Toe</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.2/socket.io.js"></script>
+		<link rel="stylesheet" href="game.css">
+	</head>
+	<body>
+        <h1>Extreme Ultimate Tic Tac Toe: Online</h1>
+		<div id="topBar">
+			<button id="leave" class="lt topButton" disabled>Leave</button>
+			<button id="howTo" class="rt topButton">How to Play</butotn>
+		</div>
+		<div id="menu">
+			<h2>Play</h2>
+			<hr>
+			<div class="dropdown">
+				<button id="random" class="drop_btn">Random</button>
+				<div id="random_drop" class="drop_content">
+					<a href="#" class="start" data-private="false" data-type="extreme">Extreme</a>
+					<a href="#" class="start" data-private="false" data-type="normal">Normal</a>
+				</div>
+			</div>
+			<div></div>
+			<div class="dropdown">
+				<button id="private" class="drop_btn">Private</button>
+				<div id="private_drop" class="drop_content">
+					<a href="#" class="start" data-private="true" data-type="extreme">Extreme</a>
+					<a href="#" class="start" data-private="true" data-type="normal">Normal</a>
+				</div>
+			</div>
+			<div>
+				<input id="gId" type="text" placeholder="Game ID" />
+				<button id="join" class="drop_btn">Join</button>
+			</div>
+		</div>
+        <canvas id="game" style="display: none; cursor: pointer;"></canvas>
+		<div id="instruct">
+			<div id="cover"></div>
+			<div id="modal">
+				<div id="closeModal">X</div>
+				<div>&nbsp;</div>
+				<div id="modalTitle">Instructions</div>
+				<hr>
+				<div id="modalContent">
+					Ultimate Tic Tac Toe is an expansion on normal Tic Tac Toe that features
+					9 smaller boards arranged into a single large board.
+					<br>
+					<br>
+					Players take turns placing their pieces in one of the spaces of a small
+					board, the location of which determines which small board their opponent
+					can play in next.
+					<br>
+					<br>
+					When a small board is won, it becomes a filled in piece in the large board
+					for the winner. A player wins the overall game when they manage to get a line
+					of 3 on the large board.
+					<br>
+					<br>
+					Extreme Ultimate Tic Tac Toe is an expansion on normal Ultimate Tic Tac Toe that
+					features special items that spawn in spaces randomly at the beginning of the game.
+					These items have the following special effects:
+					<br>
+					<br>
+
+					<img src="/images/bomb.png" width=50> <span class="powerDesc">Bomb - Allows the next player to play on any small board.</span>
+					<br>
+					<img src="/images/magnet.png" width=50> <span class="powerDesc">Magnet - Forces the next player to play on the same small board.</span>
+					<br>
+					<img src="/images/wildcard.png" width=50 height=50> <span class="powerDesc">Wildcard - Counts as a piece for either player. Can be played on top of.</span>
+					<br>
+				</div>
+			</div>
+		</div>
+
+        <script src="game.js"></script>
+		<script src="menu.js"></script>
+        <script>
+            info.ip = "http://<%= ip %>:<%= port %>";
+        </script>
+	</body>
+</html>

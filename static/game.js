@@ -9,7 +9,8 @@ var Images = {
 var info = {
     type: "normal",
     private: false,
-    id: (new URL(window.location.href)).searchParams.get("game")
+    id: (new URL(window.location.href)).searchParams.get("game"),
+    ip: null
 };
 var game;
 
@@ -321,7 +322,7 @@ class InnerBoard extends Board {
 class Game {
 
     constructor () {
-        this.socket = io("http://localhost");
+        this.socket = io(info.ip);
         this.board = new OuterBoard();
         this.newGame = true;
         this.over = false;
@@ -333,7 +334,6 @@ class Game {
         let socket = this.socket;
 
         socket.on("connected", () => {
-            console.log(info.type + " " + info.private + " " + info.id);
             if (this.newGame)
                 socket.emit("join_game", info.type, info.private, info.id);
             else
