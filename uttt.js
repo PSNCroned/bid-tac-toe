@@ -95,6 +95,8 @@ var genGame = function (pid, ip, type, priv) {
                 }
             }
         }
+
+        obj.board.inners[4][4] = 3; //set middle to bomb
     }
 
     games.push(obj);
