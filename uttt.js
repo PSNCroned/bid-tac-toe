@@ -7,6 +7,7 @@ const asy = require("async");
 const ip = require("ip");
 
 const PORT = 80;
+const IP = ip.address() == "104.238.144.86" ? "104.238.144.86" : "localhost";
 const games = [];
 
 const powerTemplate = {
@@ -17,8 +18,8 @@ const powerTemplate = {
 
 app.use(express.static("static"));
 
-http.listen(PORT, /*ip.address()*/"localhost", function () {
-    console.log("Listening at " + ip.address() + " on port " + PORT);
+http.listen(PORT, IP, function () {
+    console.log("Listening at " + IP + " on port " + PORT);
 });
 
 app.get("/", function (req, res) {
@@ -26,34 +27,28 @@ app.get("/", function (req, res) {
 });
 
 var matchQ = asy.queue(function (data, cb) {
-	if (!inGame(data.id)) { //if not already in game
-		let game;
-		for (let g in games) {
-			if (!games[g].players[2]) { //game needs a second player
-				game = games[g];
-				break;
-			}
-		}
-
-		if (game) { //if open game found
-			game.players[2] = data.id;
-			game.state = "playing";
-			cb(false, {
-				piece: 2,
-				game: game
-			});
-		}
-		else { //if open game not found
-			game = genGame(data.id, "power");
-			games.push(game);
-			cb(false, {
-				piece: 1,
-				game: game
-			});
+	let game;
+	for (let g in games) {
+		if (!games[g].players[2].sid && games[g].type == data.type && !games[g].private) {
+			game = games[g];
+			break;
 		}
 	}
-	else {
-		cb("You are already in a game!");
+
+	if (game) { //if open game found
+		game.players[2] = {sid: data.id, ip: data.ip};
+		game.state = "playing";
+		cb(false, {
+			piece: 2,
+			game: game
+		});
+	}
+	else { //if open game not found
+		game = genGame(data.id, data.ip, data.type, false);
+		cb(false, {
+			piece: 1,
+			game: game
+		});
 	}
 }, Infinity);
 
@@ -61,12 +56,14 @@ var genId = function () {
     return Math.random().toString(36).split("0.")[1];
 };
 
-var genGame = function (pid, type) {
+var genGame = function (pid, ip, type, priv) {
 	let obj = {
 		id: genId(),
+        type: type,
+        private: priv || false,
 		players: {
-			1: pid,
-			2: null
+			1: {sid: pid, ip: ip},
+			2: {}
 		},
         turn: 1,
 		state: "waiting", // or playing or finished
@@ -82,26 +79,35 @@ var genGame = function (pid, type) {
         inner: -1
 	};
 
-    if (type == "power") {
+    if (type == "extreme") {
+        let wildInners = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+
         for (let power in powerTemplate) {
             for (let i = 0; i < powerTemplate[power]; i++) {
-                obj.board.inners[random(0, 8)][random(0, 8)] = power;
+                if (power < 5) //not wildcard
+                    obj.board.inners[random(0, 8)][random(0, 8)] = power;
+                else if (power == 5) { //wildcard
+                    let index = random(0, wildInners.length - 1);
+                    obj.board.inners[wildInners[index]][random(0, 8)] = power;
+                    wildInners.splice(index, 1);
+                }
             }
         }
     }
 
+    games.push(obj);
     return obj;
 };
 
 var inGame = function (id) {
 	return games.some(function (game) {
-		return game.players[1] == id || game.players[2] == id;
+		return game.players[1].sid == id || game.players[2].sid == id;
 	});
 };
 
 var getGame = function (id) {
 	for (let g in games) {
-		if (games[g].players[1] == id || games[g].players[2] == id) {
+		if (games[g].players[1].sid == id || games[g].players[2].sid == id || games[g].id == id) {
 			return games[g];
 		}
 	}
@@ -109,7 +115,7 @@ var getGame = function (id) {
 };
 
 var getPiece = function (game, pid) {
-    return game.players[1] == pid ? 1 : 2;
+    return game.players[1].sid == pid ? 1 : 2;
 };
 
 var checkWin = function (board) {
@@ -166,38 +172,89 @@ var random = function (min, max) {
 
 io.on("connection", (socket) => {
 	var sid = socket.id;
+    var ip = socket.request.connection.remoteAddress;
+    var game;
 
 	socket.emit("connected");
 
 	socket.on("disconnect", () => {
-		var game = getGame(sid);
+		//var game = getGame(sid);
 		if (game != null) {
-			if (game.state == "waiting") {
+			if (!game.players[1].sid || !game.players[2].sid || !game.private) { //only one player or not private
+                io.to(game.id).emit("over", 3);
 				games.splice(games.indexOf(game), 1);
 			}
-			else if (game.state == "playing") {
+			else { //two players and private
+                if (game.players[1].sid == sid)
+                    game.players[1].sid = null;
+                else if (game.players[2].sid == sid)
+                    game.players[2].sid = null;
+
 				io.to(game.id).emit("player_left");
 			}
+
+            console.log("Games: " + games.length);
 		}
 	});
 
-	socket.on("join_game", () => {
-		matchQ.push({id: sid}, (err, data) => {
-			if (err)
-				socket.emit("err", "Error joining game");
-			else {
-                socket.join(data.game.id);
-				socket.emit("joined", data.piece);
-				if (data.game.state == "playing") {
-					io.to(data.game.id).emit("start", data.game.board.inners);
-                    io.to(data.game.id).emit("turn", 1, -1);
+	socket.on("join_game", (type, priv, gId) => {
+        if (!gId && !priv) {
+    		matchQ.push({id: sid, ip: ip, type: type || "normal"}, (err, data) => {
+    			if (err)
+    				socket.emit("err", "Error joining game");
+    			else {
+                    game = data.game;
+                    socket.join(data.game.id);
+    				socket.emit("joined", data.piece);
+    				if (data.game.state == "playing") {
+    					io.to(data.game.id).emit("start", data.game.board.inners);
+                        io.to(data.game.id).emit("turn", 1, -1);
+                    }
+    			}
+    		});
+        }
+        else {
+            gId = gId || "none";
+            game = getGame(gId);
+
+            if (game) {
+                if (game.state == "waiting") {
+            		game.players[2] = {sid: sid, ip: ip};
+            		game.state = "playing";
+
+                    socket.join(game.id);
+                    socket.emit("joined", 2);
+					io.to(game.id).emit("start", game.board.inners);
+                    io.to(game.id).emit("turn", 1, -1);
                 }
-			}
-		});
+                else if (game.players[1].ip == ip || game.players[2].ip == ip) {
+                    let pNum;
+
+                    if (game.players[1].ip == ip)
+                        pNum = 1;
+                    else
+                        pNum = 2;
+
+                    game.players[pNum].sid = sid;
+                    socket.join(game.id);
+                    socket.emit("joined", pNum);
+					socket.emit("start", game.board.inners);
+                    socket.emit("turn", game.turn, game.inner);
+                    io.to(game.id).emit("rejoin", pNum);
+                }
+            }
+            else {
+                game = genGame(sid, ip, type || "normal", priv);
+                socket.join(game.id);
+				socket.emit("joined", 1);
+                socket.emit("private", game.id);
+            }
+
+        }
 	});
 
 	socket.on("place_piece", (inner, cell) => {
-		var game = getGame(sid);
+		//var game = getGame(sid);
         var piece = getPiece(game, sid);
 
 		if (game.turn == piece) { //alowed to place piece
@@ -225,8 +282,8 @@ io.on("connection", (socket) => {
                         state = outerWon > 0 ? outerWon : -1;
                         game.state = "finished";
                         io.to(game.id).emit("over", state);
-                        io.sockets.connected[game.players[1]].disconnect();
-                        io.sockets.connected[game.players[2]].disconnect();
+                        io.sockets.connected[game.players[1].sid].disconnect();
+                        io.sockets.connected[game.players[2].sid].disconnect();
                     }
                 }
 

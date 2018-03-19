@@ -4,9 +4,14 @@ var canvas = document.getElementsByTagName("canvas")[0];
 var ctx = canvas.getContext("2d");
 var Images = {
     3: new Image, //bomb
-    4: new Image, //magnet
-    5: new Image  //wildcard
+    4: new Image //magnet
 };
+var info = {
+    type: "normal",
+    private: false,
+    id: (new URL(window.location.href)).searchParams.get("game")
+};
+var game;
 
 class Board {
 
@@ -60,8 +65,9 @@ class Board {
                     let coords = Board.indexToCoord(c);
                     let x = coords.col * (this.width / 3) + this.x;
                     let y = coords.row * (this.height / 3) + this.y;
+                    let bold = (c == game.lastPlace.cell && game.board.inners.indexOf(this) == game.lastPlace.inner);
 
-                    cell == 1 ? this.drawX(x, y) : cell == 2 ? this.drawO(x, y) : this.drawPower(x, y, cell);
+                    cell == 1 ? this.drawX(x, y, bold) : cell == 2 ? this.drawO(x, y, bold) : this.drawPower(x, y, cell);
                 }
             }
         }
@@ -88,13 +94,14 @@ class Board {
     }
 
 
-    drawX (x, y) {
-        ctx.strokeStyle = "#a3dbff";
-        ctx.beginPath();
-
+    drawX (x, y, bold) {
         let cellWidth = this.width / 3;
         let cellHeight = this.height / 3;
         let pad = this.pad;
+
+        ctx.strokeStyle = "#a3dbff";
+        ctx.lineWidth = bold ? 3 : 1;
+        ctx.beginPath();
 
         ctx.moveTo(x + pad, y + pad);
         ctx.lineTo(x + cellWidth - pad, y + cellHeight - pad);
@@ -103,18 +110,21 @@ class Board {
         ctx.lineTo(x + pad, y + cellHeight - pad);
 
         ctx.stroke();
+        ctx.lineWidth = 1;
     }
 
-    drawO (x, y) {
+    drawO (x, y, bold) {
         let cellWidth = this.width / 3;
         let cellHeight = this.height / 3;
 
         ctx.strokeStyle = "#ff9f8c";
+        ctx.lineWidth = bold ? 3 : 1;
         ctx.beginPath();
 
         ctx.arc(x + cellWidth / 2, y + cellHeight / 2, cellWidth / 2 - this.pad, 0, 2 * Math.PI);
 
         ctx.stroke();
+        ctx.lineWidth = 1;
     }
 
     drawPower (x, y, type) {
@@ -217,6 +227,8 @@ class Board {
     }
 
     static indexToCoord (i) {
+        i = parseInt(i);
+
         let row = Math.floor(i / 3);
         let col = i % 3;
 
@@ -224,6 +236,8 @@ class Board {
     }
 
     static coordToIndex (row, col) {
+        row = parseInt(row);
+        col = parseInt(col);
         return row * 3 + col;
     }
 
@@ -249,9 +263,9 @@ class OuterBoard extends Board {
     }
 
     render () {
-        super.render();
         for (let i in this.inners)
             this.inners[i].render();
+        super.render();
     }
 
     click (x, y) {
@@ -300,7 +314,7 @@ class InnerBoard extends Board {
             this.outer.inners[inner].clearGlow();
         }
 
-        this.setGlow(cell, "yellow", 0.2);
+        //this.setGlow(cell, "yellow", 0.2);
     }
 }
 
@@ -311,14 +325,17 @@ class Game {
         this.board = new OuterBoard();
         this.newGame = true;
         this.over = false;
-
-        this.render();
+        this.lastPlace = {
+            inner: null,
+            cell: null
+        };
 
         let socket = this.socket;
 
         socket.on("connected", () => {
+            console.log(info.type + " " + info.private + " " + info.id);
             if (this.newGame)
-                socket.emit("join_game");
+                socket.emit("join_game", info.type, info.private, info.id);
             else
                 window.location.reload();
         });
@@ -326,6 +343,11 @@ class Game {
         socket.on("joined", (piece) => {
             this.newGame = false;
             this.piece = piece;
+        });
+
+        socket.on("private", (code) => {
+            info.id = code;
+            this.alert("Code for opponent to join: " + code);
         });
 
         socket.on("start", (board) => {
@@ -340,6 +362,7 @@ class Game {
         });
 
         socket.on("place", (inner, cell, piece) => {
+            game.lastPlace = {inner: inner, cell: cell};
             this.board.inners[inner].placePiece(cell, piece);
             this.render();
         });
@@ -367,11 +390,22 @@ class Game {
             if (winner != -1) {
                 if (winner == 1)
                     this.alert("X wins!");
-                else
+                else if (winner == 2)
                     this.alert("O wins!");
+                else
+                    this.alert("Other player left, you win!");
             }
             else
                 this.alert("Tie! No one wins")
+        });
+
+        socket.on("rejoin", (id) => {
+            id = id == 1 ? "X" : "O";
+            this.alert(id + " rejoined!");
+        });
+
+        socket.on("player_left", () => {
+            this.alert("Opponent left, they can rejoin at code: " + info.id);
         });
 
         socket.on("disconnect", () => {
@@ -396,27 +430,37 @@ class Game {
     }
 
     static loadImages (cb) {
-        Images[3].src = "/images/bomb.png";
+        Images[3].src = "/images/bomb.svg";
         Images[3].onload = function () {
-            Images[4].src = "/images/magnet.png";
+            Images[4].src = "/images/magnet.svg";
         };
-        Images[4].onload = function () {
-            Images[5].src = "/images/wildcard.png";
-        }
-        Images[5].onload = cb;
+        Images[4].onload = cb;
+    }
+
+    static begin () {
+        Game.loadImages(function () {
+            $("h1").text("Searching for opponent...");
+            $("#menu").hide();
+            $("#game").show();
+            $("#leave").show();
+            $("#leave")[0].disabled = false;
+
+            game = new Game();
+            game.render();
+
+            $(canvas).click(function (e) {
+                let rect = canvas.getBoundingClientRect();
+                let x = e.clientX - rect.left;
+                let y = e.clientY - rect.top;
+
+                game.click(x, y);
+            });
+
+            $("#leave").click(function() {
+                if (!$(this)[0].disabled)
+                    window.location.reload();
+            });
+        });
     }
 
 }
-
-var game;
-Game.loadImages(function () {
-    game = new Game();
-
-    $(canvas).click(function (e) {
-        let rect = canvas.getBoundingClientRect();
-        let x = e.clientX - rect.left;
-        let y = e.clientY - rect.top;
-
-        game.click(x, y);
-    });
-});
