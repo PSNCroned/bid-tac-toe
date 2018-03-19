@@ -4,13 +4,20 @@ body {
 }
 
 h1 {
+    font-family: 'Amaranth', Arial;
     font-size: 45px;
+    min-width: 600px;
 }
 
 #topBar {
-    width: 700px;
+    max-width: 700px;
+    min-width: 600px;
     margin: auto;
     height: 50px;
+}
+
+#menu {
+    min-width: 600px;
 }
 
 button {
@@ -26,10 +33,6 @@ button {
 
 button:disabled {
     cursor: default;
-}
-
-#leave {
-    display: none;
 }
 
 .lt {
@@ -122,8 +125,7 @@ position: fixed;
     left: 50%;
     margin-top: -400px;
     margin-left: -350px;
-    width: 700px;
-    height: 800px;
+    max-width: 700px;
     background-color: white;
     z-index: 101;
 }
@@ -150,6 +152,7 @@ position: fixed;
 #modalContent {
     text-align: left;
     padding: 20px;
+    margin-bottom: 20px;
 }
 
 .powerDesc {

@@ -12,6 +12,7 @@ $(".start").click(function () {
 $("#join").click(function () {
     info.private = true;
     info.id = $(this).parent().find("#gId").val();
+
     Game.begin();
 });
 

@@ -12,11 +12,11 @@ var info = {
     id: (new URL(window.location.href)).searchParams.get("game"),
     ip: null
 };
-var game;
 
 class Board {
 
-    constructor (x, y, width, height, color) {
+    constructor (game, x, y, width, height, color) {
+        this.game = game;
         this.x = x;
         this.y = y;
         this.width = width;
@@ -66,7 +66,7 @@ class Board {
                     let coords = Board.indexToCoord(c);
                     let x = coords.col * (this.width / 3) + this.x;
                     let y = coords.row * (this.height / 3) + this.y;
-                    let bold = (c == game.lastPlace.cell && game.board.inners.indexOf(this) == game.lastPlace.inner);
+                        let bold = (c == this.game.lastPlace.cell && this.game.board.inners.indexOf(this) == this.game.lastPlace.inner);
 
                     cell == 1 ? this.drawX(x, y, bold) : cell == 2 ? this.drawO(x, y, bold) : this.drawPower(x, y, cell);
                 }
@@ -246,16 +246,16 @@ class Board {
 
 class OuterBoard extends Board {
 
-    constructor () {
-        super(0, 0, canvas.width, canvas.height, "black");
+    constructor (game) {
+        super(game, 0, 0, canvas.width, canvas.height, "black");
 
         this.inners = [];
         this.shapes = false;
 
         for (let i in [0, 1, 2]) {
-            this.addInner(new InnerBoard(this, 0, i));
-            this.addInner(new InnerBoard(this, 1, i));
-            this.addInner(new InnerBoard(this, 2, i));
+            this.addInner(new InnerBoard(game, this, 0, i));
+            this.addInner(new InnerBoard(game, this, 1, i));
+            this.addInner(new InnerBoard(game, this, 2, i));
         }
     }
 
@@ -270,7 +270,7 @@ class OuterBoard extends Board {
     }
 
     click (x, y) {
-        if (game.turn == game.piece) {
+        if (this.game.turn == this.game.piece) {
             let cell = this.getCell(x, y);
             this.inners[cell].click(x, y, cell);
         }
@@ -285,7 +285,7 @@ class OuterBoard extends Board {
         this.clearBorders();
         for (let i in this.inners) {
             if (inner == i || (inner == -1 && this.cells[i] == 0)) {
-                this.setBorder(i, game.turn == 1 ? "#a3dbff" : "#ff9f8c", 0.5);
+                this.setBorder(i, this.game.turn == 1 ? "#a3dbff" : "#ff9f8c", 0.5);
             }
         }
     }
@@ -294,8 +294,8 @@ class OuterBoard extends Board {
 
 class InnerBoard extends Board {
 
-    constructor (outerBoard, x, y) {
-        super(x * (outerBoard.width / 3), y * (outerBoard.height / 3), outerBoard.width / 3, outerBoard.height / 3, "#aaaaaa");
+    constructor (game, outerBoard, x, y) {
+        super(game, x * (outerBoard.width / 3), y * (outerBoard.height / 3), outerBoard.width / 3, outerBoard.height / 3, "#aaaaaa");
         this.outer = outerBoard;
     }
 
@@ -305,7 +305,7 @@ class InnerBoard extends Board {
 
     click (x, y, inner) {
         let cell = this.getCell(x, y);
-        game.socket.emit("place_piece", inner, cell);
+        this.game.socket.emit("place_piece", inner, cell);
     }
 
     placePiece (cell, piece) {
@@ -323,7 +323,7 @@ class Game {
 
     constructor () {
         this.socket = io(info.ip);
-        this.board = new OuterBoard();
+        this.board = new OuterBoard(this);
         this.newGame = true;
         this.over = false;
         this.lastPlace = {
@@ -362,7 +362,7 @@ class Game {
         });
 
         socket.on("place", (inner, cell, piece) => {
-            game.lastPlace = {inner: inner, cell: cell};
+            this.lastPlace = {inner: inner, cell: cell};
             this.board.inners[inner].placePiece(cell, piece);
             this.render();
         });
@@ -444,8 +444,9 @@ class Game {
             $("#game").show();
             $("#leave").show();
             $("#leave")[0].disabled = false;
+            $("h1").css("font-family", "Arial");
 
-            game = new Game();
+            var game = new Game();
             game.render();
 
             $(canvas).click(function (e) {
