@@ -32,9 +32,10 @@ app.set("view engine", "ejs");
     console.log("Redirect listening at " + IP + " on port " + PORT);
 });*/
 http.createServer(function (req, res) {
+    console.log("Made request to http");
     res.writeHead(301, {"Location": "https://euttto.com"});
     res.end();
-});
+}).listen(PORT);
 server.listen(SSL_PORT, IP, function () {
     console.log("Listening at " + IP + " on port " + SSL_PORT);
 });
