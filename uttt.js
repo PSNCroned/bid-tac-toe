@@ -23,7 +23,7 @@ const powerTemplate = {
     5: 2  //wildcard
 };
 
-io(server);
+io = io(server);
 app.use(express.static("static"));
 app.set("view engine", "ejs");
 
