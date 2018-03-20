@@ -33,7 +33,7 @@ https.createServer(options, app).listen(SSL_PORT, IP, function () {
 });
 
 app.get("/", function (req, res) {
-    res.render("index", {ip: IP, port: SSL_PORT});
+    res.render("index", {url: "euttto.com", port: SSL_PORT});
 });
 
 var matchQ = asy.queue(function (data, cb) {

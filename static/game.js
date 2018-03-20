@@ -10,7 +10,7 @@ var info = {
     type: "normal",
     private: false,
     id: (new URL(window.location.href)).searchParams.get("game"),
-    ip: null
+    url: null
 };
 
 class Board {
@@ -322,7 +322,7 @@ class InnerBoard extends Board {
 class Game {
 
     constructor () {
-        this.socket = io(info.ip);
+        this.socket = io(info.url);
         this.board = new OuterBoard(this);
         this.newGame = true;
         this.over = false;
