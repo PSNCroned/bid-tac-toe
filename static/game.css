@@ -63,7 +63,7 @@ h2 {
 .drop_content {
     display: none;
     position: absolute;
-    background-color: #d3d3d3;
+    background-color: #ededed;
     z-index: 1;
     width: 200px;
     box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
@@ -75,11 +75,11 @@ h2 {
     text-decoration: none;
     color: black;
     text-align: center;
-    font-size: 20px;
+    font-size: 25px;
 }
 
 .drop_content a:hover {
-    background-color: #cccccc
+    background-color: #dedede
 }
 
 #join {

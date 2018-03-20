@@ -392,7 +392,7 @@ class Game {
                     this.alert("X wins!");
                 else if (winner == 2)
                     this.alert("O wins!");
-                else
+                else if (!this.over)
                     this.alert("Other player left, you win!");
             }
             else
@@ -405,7 +405,8 @@ class Game {
         });
 
         socket.on("player_left", () => {
-            this.alert("Opponent left, they can rejoin at code: " + info.id);
+            if (!this.over)
+                this.alert("Opponent left, they can rejoin at code: " + info.id);
         });
 
         socket.on("disconnect", () => {
