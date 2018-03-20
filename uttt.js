@@ -29,7 +29,7 @@ http.Server(app).listen(PORT, IP, function () {
     console.log("Listening at " + IP + " on port " + PORT);
 });
 https.createServer(options, app).listen(SSL_PORT, IP, function () {
-    console.log("Listening at " + IP + " on port " + PORT);
+    console.log("Listening at " + IP + " on port " + SSL_PORT);
 });
 
 app.get("/", function (req, res) {
