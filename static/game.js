@@ -383,7 +383,6 @@ class Game {
         });
 
         socket.on("over", (winner) => {
-            this.over = true;
             this.board.clearBorders();
             this.render();
 
@@ -397,6 +396,8 @@ class Game {
             }
             else
                 this.alert("Tie! No one wins")
+
+            this.over = true;
         });
 
         socket.on("rejoin", (id) => {
