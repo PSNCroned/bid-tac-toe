@@ -1,8 +1,8 @@
 const express = require("express");
 const app = express();
-const http = require("http");
+//const http = require("http");
 const https = require("https");
-const io = require("socket.io")(http);
+const io = require("socket.io");
 const fs = require("fs");
 const asy = require("async");
 const ip = require("ip");
@@ -11,6 +11,7 @@ const options = {
     cert: fs.readFileSync("/etc/letsencrypt/live/euttto.com/fullchain.pem"),
     key: fs.readFileSync("/etc/letsencrypt/live/euttto.com/privkey.pem")
 };
+const server = https.Server(options, app);
 const PORT = 80;
 const SSL_PORT = 443;
 const IP = ip.address() == "104.238.144.86" ? "104.238.144.86" : "localhost";
@@ -22,13 +23,14 @@ const powerTemplate = {
     5: 2  //wildcard
 };
 
+io(server);
 app.use(express.static("static"));
 app.set("view engine", "ejs");
 
-http.Server(app).listen(PORT, IP, function () {
+/*http.Server(app).listen(PORT, IP, function () {
     console.log("Listening at " + IP + " on port " + PORT);
-});
-https.createServer(options, app).listen(SSL_PORT, IP, function () {
+});*/
+server.listen(SSL_PORT, IP, function () {
     console.log("Listening at " + IP + " on port " + SSL_PORT);
 });
 
