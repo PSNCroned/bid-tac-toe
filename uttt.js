@@ -8,8 +8,8 @@ const asy = require("async");
 const ip = require("ip");
 
 const options = {
-    cert: fs.readFileSync("./sslcert/fullchain.pem"),
-    key: fs.readFileSync("./sslcert/privkey.pem")
+    cert: fs.readFileSync("/etc/letsencrypt/live/euttto.com/fullchain.pem"),
+    key: fs.readFileSync("/etc/letsencrypt/live/euttto.com/privkey.pem")
 };
 const PORT = 80;
 const SSL_PORT = 443;
