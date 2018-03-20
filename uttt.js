@@ -27,12 +27,7 @@ io = io(server);
 app.use(express.static("static"));
 app.set("view engine", "ejs");
 
-
-/*http.Server(app).listen(PORT, IP, function () {
-    console.log("Redirect listening at " + IP + " on port " + PORT);
-});*/
 http.createServer(function (req, res) {
-    console.log("Made request to http");
     res.writeHead(301, {"Location": "https://euttto.com"});
     res.end();
 }).listen(PORT);
