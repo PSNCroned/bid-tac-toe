@@ -1,6 +1,6 @@
 const express = require("express");
 const app = express();
-//const http = require("http");
+const http = require("http");
 const https = require("https");
 let io = require("socket.io");
 const fs = require("fs");
@@ -27,9 +27,14 @@ io = io(server);
 app.use(express.static("static"));
 app.set("view engine", "ejs");
 
+
 /*http.Server(app).listen(PORT, IP, function () {
-    console.log("Listening at " + IP + " on port " + PORT);
+    console.log("Redirect listening at " + IP + " on port " + PORT);
 });*/
+http.createServer(function (req, res) {
+    res.writeHead(301, {"Location": "https://euttto.com"});
+    res.end();
+});
 server.listen(SSL_PORT, IP, function () {
     console.log("Listening at " + IP + " on port " + SSL_PORT);
 });
