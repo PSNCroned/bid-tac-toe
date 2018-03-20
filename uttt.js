@@ -1,12 +1,18 @@
 const express = require("express");
 const app = express();
-const http = require("http").Server(app);
+const http = require("http");
+const https = require("https");
 const io = require("socket.io")(http);
 const fs = require("fs");
 const asy = require("async");
 const ip = require("ip");
 
+const options = {
+    cert: fs.readFileSync("./sslcert/fullchain.pem"),
+    key: fs.readFileSync("./sslcert/privkey.pem")
+};
 const PORT = 80;
+const SSL_PORT = 443;
 const IP = ip.address() == "104.238.144.86" ? "104.238.144.86" : "localhost";
 const games = [];
 
@@ -19,12 +25,14 @@ const powerTemplate = {
 app.use(express.static("static"));
 app.set("view engine", "ejs");
 
-http.listen(PORT, IP, function () {
+http.Server(app).listen(PORT, IP, function () {
+    console.log("Listening at " + IP + " on port " + PORT);
+});
+https.createServer(options, app).listen(SSL_PORT, IP, function () {
     console.log("Listening at " + IP + " on port " + PORT);
 });
 
 app.get("/", function (req, res) {
-    //res.sendFile(__dirname + "/uttt.html");
     res.render("index", {ip: IP, port: PORT});
 });
 
